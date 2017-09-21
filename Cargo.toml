@@ -1,7 +1,7 @@
 [package]
 name = "rlox-lalrpop"
 version = "0.1.0"
-authors = ["itsbth <itsbth@itsbth.com>"]
+authors = ["Bjørn Tore Håvie <itsbth@itsbth.com>"]
 build = "build.rs" # LALRPOP preprocessing
 
 # Add a dependency on the regex crate; this is not
