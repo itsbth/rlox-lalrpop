@@ -1,0 +1,87 @@
+// vi: ft=rust
+use std::str::FromStr;
+use ast::{Program, Statement, Expression, Binop};
+
+grammar;
+
+Comma<T>: Vec<T> = {
+    <v:(<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            let mut vm = v;
+            vm.push(e);
+            vm
+        }
+    }
+};
+
+pub program: Program = {
+    <declaration*> => Program::new(<>),
+};
+
+declaration: Statement = {
+    "var" <id:identifier> <e:("=" <expression>)?> ";" =>
+        Statement::Var(String::from(id), e),
+    "fun" <identifier> "(" <Comma<identifier>> ")" "{" <declaration*> "}" =>
+        Statement::Fun(<>),
+    "return" <expression?> ";" => Statement::Return(<>),
+    statement,
+};
+
+statement: Statement = {
+    "print" <expression> ";" => Statement::Print(<>),
+    "{" <declaration*> "}" => Statement::Block(<>),
+    <expression> ";" => Statement::Expression(<>),
+};
+
+Tier<Op, NextTier>: Expression = {
+    <lhs:Tier<Op, NextTier>> <op:Op> <rhs:NextTier>
+        => Expression::Binop(op, Box::new(lhs), Box::new(rhs)),
+    NextTier
+};
+
+expression = assignment;
+
+assignment = Tier<assignment_op, equality>;
+equality = Tier<equality_op, comparison>;
+comparison = Tier<comparison_op, addition>;
+addition = Tier<addition_op, multiplication>;
+multiplication = Tier<multiplication_op, call>;
+
+assignment_op: Binop = "=" => Binop::Assignment;
+equality_op: Binop = {
+    "==" => Binop::Equal,
+    "!=" => Binop::NotEqual,
+};
+comparison_op: Binop = {
+    ">" => Binop::Greater,
+    ">=" => Binop::GreaterEqual,
+    "<" => Binop::Less,
+    "<=" => Binop::LessEqual,
+};
+addition_op: Binop = {
+    "+" => Binop::Add,
+    "-" => Binop::Sub,
+};
+multiplication_op: Binop = {
+    "*" => Binop::Mul,
+    "/" => Binop::Div,
+};
+
+call: Expression = {
+    <ca:primary> "(" <arg:Comma<expression>> ")" => Expression::Call(Box::new(ca), arg),
+    primary,
+};
+
+primary: Expression = {
+    <num>,
+    identifier => Expression::Variable(String::from(<>)),
+    "(" <expression> ")"
+};
+
+identifier: String =
+   r"\pL[\pL\pN_]+" => String::from(<>);
+
+num: Expression =
+    r"-?[0-9]+(\.[0-9]+)?" => Expression::Literal(f64::from_str(<>).unwrap());
+
