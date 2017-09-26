@@ -1,6 +1,7 @@
-// vi: ft=rust
+// -*- mode: rust -*-
+#![cfg_attr(rustfmt, rustfmt_skip)]
 use std::str::FromStr;
-use ast::{Program, Statement, Expression, Binop};
+use ast::{Program, Statement, Expression, Binop, Variable};
 
 grammar;
 
@@ -21,16 +22,20 @@ pub program: Program = {
 
 declaration: Statement = {
     "var" <id:identifier> <e:("=" <expression>)?> ";" =>
-        Statement::Var(String::from(id), e),
+        Statement::Var(Variable::Unresolved(String::from(id)), e),
     "fun" <identifier> "(" <Comma<identifier>> ")" "{" <declaration*> "}" =>
         Statement::Fun(<>),
-    "return" <expression?> ";" => Statement::Return(<>),
     statement,
 };
 
 statement: Statement = {
     "print" <expression> ";" => Statement::Print(<>),
     "{" <declaration*> "}" => Statement::Block(<>),
+    "if" "(" <e:expression> ")" <s:statement> =>
+        Statement::If(e, Box::new(s)),
+    "while" "(" <e:expression> ")" <s:statement> =>
+        Statement::While(e, Box::new(s)),
+    "return" <expression?> ";" => Statement::Return(<>),
     <expression> ";" => Statement::Expression(<>),
 };
 
@@ -75,13 +80,14 @@ call: Expression = {
 
 primary: Expression = {
     <num>,
-    identifier => Expression::Variable(String::from(<>)),
+    identifier => Expression::Variable(Variable::Unresolved(String::from(<>))),
     "(" <expression> ")"
 };
 
 identifier: String =
-   r"\pL[\pL\pN_]+" => String::from(<>);
+   r"\pL[\pL\pN_]*" => String::from(<>);
 
 num: Expression =
-    r"-?[0-9]+(\.[0-9]+)?" => Expression::Literal(f64::from_str(<>).unwrap());
+    r"[0-9]+(\.[0-9]+)?" => Expression::Literal(f64::from_str(<>).unwrap());
 
+// vi: ft=rust
