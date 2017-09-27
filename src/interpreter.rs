@@ -56,6 +56,15 @@ impl Interpreter {
                 self.scope.pop();
                 Ok(None)
             }
+            ast::Statement::If(ref cond, ref if_true, ref if_false) => {
+                // comparing floats? genius
+                if self.evaluate(cond)? != 0.0 {
+                    self.execute(if_true)?;
+                } else if let Some(ref if_false) = **if_false {
+                    self.execute(&if_false)?;
+                }
+                Ok(None)
+            }
             _ => Err(RuntimeError::NotYetImplemented),
         }
     }

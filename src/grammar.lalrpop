@@ -28,13 +28,17 @@ declaration: Statement = {
     statement,
 };
 
-statement: Statement = {
+statement = statement1<"I">;
+
+statement1<I>: Statement = {
     "print" <expression> ";" => Statement::Print(<>),
     "{" <declaration*> "}" => Statement::Block(<>),
-    "if" "(" <e:expression> ")" <s:statement> =>
-        Statement::If(e, Box::new(s)),
-    "while" "(" <e:expression> ")" <s:statement> =>
+    "while" "(" <e:expression> ")" <s:statement1<I>> =>
         Statement::While(e, Box::new(s)),
+    "if" "(" <c:expression> ")" <s:statement1<"">> "else" <e:statement1<I>> =>
+        Statement::If(c, Box::new(s), Box::new(Some(e))),
+    "if" "(" <c:expression> ")" <s:statement1<I>> if I != "" =>
+        Statement::If(c, Box::new(s), Box::new(None)),
     "return" <expression?> ";" => Statement::Return(<>),
     <expression> ";" => Statement::Expression(<>),
 };

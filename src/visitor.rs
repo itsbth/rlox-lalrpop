@@ -16,7 +16,7 @@ pub trait Visitor {
             Statement::Fun(ref name, ref bindings, ref body) => {
                 self.visit_fun(name, bindings, body)
             }
-            Statement::If(ref expr, ref body) => self.visit_if(expr, body),
+            Statement::If(ref expr, ref if_true, ref if_false) => self.visit_if(expr, if_true, if_false),
             Statement::Print(ref expr) => self.visit_print(expr),
             Statement::Return(ref expr) => self.visit_return(expr),
             Statement::Var(ref name, ref val) => self.visit_var(name, val),
@@ -40,10 +40,14 @@ pub trait Visitor {
         let body = body.iter().map(|st| self.visit_statement(st)).collect();
         Statement::Fun(name.clone(), bindings.clone(), body)
     }
-    fn visit_if(&mut self, expr: &Expression, body: &Statement) -> Statement {
+    fn visit_if(&mut self, expr: &Expression, if_true: &Statement, if_false: &Option<Statement>) -> Statement {
         let expr = self.visit_expr(expr);
-        let body = self.visit_statement(body);
-        Statement::If(expr, Box::new(body))
+        let if_true = self.visit_statement(if_true);
+        let if_false = match *if_false {
+            Some(ref stmt) => Some(self.visit_statement(stmt)),
+            None => None,
+        };
+        Statement::If(expr, Box::new(if_true), Box::new(if_false))
     }
     fn visit_print(&mut self, expr: &Expression) -> Statement {
         let expr = self.visit_expr(expr);
